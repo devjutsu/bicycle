@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import MapLibre, { Marker, MapRef } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { Fullscreen, LocateFixed } from 'lucide-react'
@@ -8,6 +8,16 @@ import { useRouter } from 'next/navigation'
 
 type MapProps = {
   fullScreen?: boolean
+  rides?: {
+    id: string
+    start_lat: number
+    start_lng: number
+    end_lat: number
+    end_lng: number
+    distance: number
+    date: Date
+    user_id: string
+  }[]
 }
 
 export function Map(props: MapProps) {
@@ -30,6 +40,7 @@ export function Map(props: MapProps) {
   }, [])
 
   const handleMapLoad = () => {
+    console.log('Map loaded - requesting location...')
     if (mapRef.current) {
       mapRef.current.flyTo({
         center: location,
@@ -42,11 +53,13 @@ export function Map(props: MapProps) {
         canvas.style.cursor = 'grab'
       }
     }
+    handleLocate() // Locate user when map loads
   }
 
-  const handleLocate = () => {
+  const handleLocate = useCallback(() => {
+    console.log('handleLocate')
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.')
+      console.log('Geolocation not supported')
       return
     }
 
@@ -56,6 +69,7 @@ export function Map(props: MapProps) {
           position.coords.longitude,
           position.coords.latitude,
         ]
+        console.log('Got user location:', userLocation)
         setLocation(userLocation)
         if (mapRef.current) {
           mapRef.current.flyTo({
@@ -67,28 +81,27 @@ export function Map(props: MapProps) {
       },
       (error) => {
         console.error('Error getting location:', error)
-        alert('Unable to retrieve your location.')
       }
     )
-  }
+  }, [])
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
       <button
         onClick={handleLocate}
-        className="absolute top-2 left-2 z-20 p-2 rounded-full backdrop-blur transition cursor-pointer border border-gray-300 bg-gray-200"
-        aria-label="Locate self"
+        className="absolute top-2 left-2 z-20 p-2 rounded-full backdrop-blur transition cursor-pointer border border-gray-300 bg-white/80 hover:bg-white"
+        aria-label="Locate me"
       >
-        <LocateFixed />
+        <LocateFixed className="w-4 h-4" />
       </button>
 
       {!props.fullScreen && (
         <button
           onClick={() => router.push('/map')}
-          className="absolute top-2 right-2 z-20 p-2 rounded-full backdrop-blur transition cursor-pointer border border-gray-300 bg-gray-200"
+          className="absolute top-2 right-2 z-20 p-2 rounded-full backdrop-blur transition cursor-pointer border border-gray-300 bg-white/80 hover:bg-white"
           aria-label="Open full screen map"
         >
-          <Fullscreen className="w-5 h-5 text-black" />
+          <Fullscreen className="w-4 h-4" />
         </button>
       )}
 
@@ -108,6 +121,12 @@ export function Map(props: MapProps) {
         onLoad={handleMapLoad}
       >
         <Marker longitude={location[0]} latitude={location[1]} />
+        {props.rides?.map((ride) => (
+          <div key={ride.id}>
+            <Marker longitude={ride.start_lng} latitude={ride.start_lat} color="red" />
+            <Marker longitude={ride.end_lng} latitude={ride.end_lat} color="green" />
+          </div>
+        ))}
       </MapLibre>
     </div>
   )

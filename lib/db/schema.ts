@@ -6,6 +6,7 @@ import {
   timestamp,
   integer,
   boolean,
+  doublePrecision,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -71,22 +72,21 @@ export const invitations = pgTable('invitations', {
 
 export const rides = pgTable('rides', {
   id: serial('id').primaryKey(),
+  startDistance: integer('start_distance').notNull(),
+  endDistance: integer('end_distance').notNull(),
   creator: text('creator').notNull(),
-  distance: integer('distance').notNull(),
   isOpenRoute: boolean('is_open_route').notNull().default(true),
-  startLat: text('start_lat').notNull(),
-  startLng: text('start_lng').notNull(),
-  startTime: timestamp('start_time').notNull().defaultNow(),
+  startLat: doublePrecision('start_lat').notNull(),
+  startLng: doublePrecision('start_lng').notNull(),
+  startTime: timestamp('start_time').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 export const rideParticipants = pgTable('ride_participants', {
   id: serial('id').primaryKey(),
-  rideId: integer('ride_id')
-    .notNull()
-    .references(() => rides.id),
-  userId: text('user_id').notNull(), // Using text for now since we don't have user auth yet
+  rideId: integer('ride_id').notNull().references(() => rides.id),
+  participant: text('participant').notNull(),
   joinedAt: timestamp('joined_at').notNull().defaultNow(),
 });
 

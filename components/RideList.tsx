@@ -60,8 +60,12 @@ export function RideList() {
     }
   }
 
+  const getMapUrl = (lat: string, lng: string) => {
+    return `https://www.google.com/maps?q=${lat},${lng}`
+  }
+
   if (isLoading) {
-    return <div className="animate-pulse">Loading rides...</div>
+    return <div className="animate-pulse">Loading recent rides...</div>
   }
 
   if (error) {
@@ -83,14 +87,23 @@ export function RideList() {
 
   return (
     <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Recent Rides</h2>
       {rides.map((ride) => (
         <Card key={ride.id} className="p-4">
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="font-semibold">{ride.distance}km</h3>
+              <h3 className="font-semibold">{ride.startDistance}km - {ride.endDistance}km</h3>
               <p className="text-sm text-gray-500">Created by {ride.creator}</p>
               <p className="text-sm text-gray-500">
-                Starting point: {ride.startLat}, {ride.startLng}
+                Starting point:{' '}
+                <a
+                  href={getMapUrl(ride.startLat.toString(), ride.startLng.toString())}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {ride.startLat}, {ride.startLng}
+                </a>
               </p>
             </div>
             <div className="flex flex-col items-end gap-2">

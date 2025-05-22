@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rides } from '@/lib/db/schema'
+import { desc } from 'drizzle-orm'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     console.log('Received request body:', body)
     
-    const { distance, creator, startLat, startLng } = body
+    const { startDistance, endDistance, creator, startLat, startLng, startTime } = body
 
     if (!startLat || !startLng) {
       return NextResponse.json(
@@ -16,19 +17,35 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!distance || isNaN(Number(distance))) {
+    if (!startDistance || !endDistance || isNaN(Number(startDistance)) || isNaN(Number(endDistance))) {
       return NextResponse.json(
-        { error: 'Valid distance is required' },
+        { error: 'Valid start and end distances are required' },
+        { status: 400 }
+      )
+    }
+
+    if (Number(startDistance) >= Number(endDistance)) {
+      return NextResponse.json(
+        { error: 'End distance must be greater than start distance' },
+        { status: 400 }
+      )
+    }
+
+    if (!startTime) {
+      return NextResponse.json(
+        { error: 'Start time is required' },
         { status: 400 }
       )
     }
 
     const rideData = {
-      distance: parseInt(distance),
+      startDistance: parseInt(startDistance),
+      endDistance: parseInt(endDistance),
       creator,
       isOpenRoute: true, // Default to open route
       startLat,
       startLng,
+      startTime: new Date(startTime),
     }
     console.log('Attempting to create ride with data:', rideData)
 
@@ -61,10 +78,12 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    console.log('Attempting to fetch rides...')
-    const allRides = await db.select().from(rides)
-    console.log('Successfully fetched rides:', allRides)
-    return NextResponse.json(allRides)
+    console.log('Attempting to fetch recent rides...')
+    const recentRides = await db.select()
+      .from(rides)
+      .orderBy(desc(rides.createdAt))
+    console.log('Successfully fetched recent rides:', recentRides)
+    return NextResponse.json(recentRides)
   } catch (error) {
     console.error('Error fetching rides:', error)
     if (error instanceof Error) {
