@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS rides (
+  id SERIAL PRIMARY KEY,
+  creator TEXT NOT NULL,
+  distance INTEGER NOT NULL,
+  is_open_route BOOLEAN NOT NULL DEFAULT true,
+  start_lat TEXT NOT NULL,
+  start_lng TEXT NOT NULL,
+  start_time TIMESTAMP NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+); 

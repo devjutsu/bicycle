@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
   integer,
+  boolean,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -66,6 +67,18 @@ export const invitations = pgTable('invitations', {
     .references(() => users.id),
   invitedAt: timestamp('invited_at').notNull().defaultNow(),
   status: varchar('status', { length: 20 }).notNull().default('pending'),
+});
+
+export const rides = pgTable('rides', {
+  id: serial('id').primaryKey(),
+  creator: text('creator').notNull(),
+  distance: integer('distance').notNull(),
+  isOpenRoute: boolean('is_open_route').notNull().default(true),
+  startLat: text('start_lat').notNull(),
+  startLng: text('start_lng').notNull(),
+  startTime: timestamp('start_time').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 export const teamsRelations = relations(teams, ({ many }) => ({
@@ -140,3 +153,6 @@ export enum ActivityType {
   INVITE_TEAM_MEMBER = 'INVITE_TEAM_MEMBER',
   ACCEPT_INVITATION = 'ACCEPT_INVITATION',
 }
+
+export type Ride = typeof rides.$inferSelect;
+export type NewRide = typeof rides.$inferInsert;
