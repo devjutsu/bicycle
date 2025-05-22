@@ -2,39 +2,63 @@
 
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import type { Ride } from '@/lib/db/schema'
 
 export function RideList() {
   const [rides, setRides] = useState<Ride[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [joiningRideId, setJoiningRideId] = useState<number | null>(null)
+
+  const fetchRides = async () => {
+    try {
+      console.log('Fetching rides...')
+      const response = await fetch('/api/rides')
+      console.log('Response status:', response.status)
+      
+      const data = await response.json()
+      console.log('Response data:', data)
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch rides')
+      }
+      
+      setRides(data)
+      setError(null)
+    } catch (error) {
+      console.error('Error fetching rides:', error)
+      setError(error instanceof Error ? error.message : 'Failed to fetch rides')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchRides = async () => {
-      try {
-        console.log('Fetching rides...')
-        const response = await fetch('/api/rides')
-        console.log('Response status:', response.status)
-        
-        const data = await response.json()
-        console.log('Response data:', data)
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch rides')
-        }
-        
-        setRides(data)
-        setError(null)
-      } catch (error) {
-        console.error('Error fetching rides:', error)
-        setError(error instanceof Error ? error.message : 'Failed to fetch rides')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchRides()
   }, [])
+
+  const handleJoinRide = async (rideId: number) => {
+    try {
+      setJoiningRideId(rideId)
+      const response = await fetch(`/api/rides/${rideId}/join`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to join ride')
+      }
+
+      // Refresh the rides list to show updated participant count
+      await fetchRides()
+    } catch (error) {
+      console.error('Error joining ride:', error)
+      alert(error instanceof Error ? error.message : 'Failed to join ride')
+    } finally {
+      setJoiningRideId(null)
+    }
+  }
 
   if (isLoading) {
     return <div className="animate-pulse">Loading rides...</div>
@@ -69,8 +93,17 @@ export function RideList() {
                 Starting point: {ride.startLat}, {ride.startLng}
               </p>
             </div>
-            <div className="text-sm text-gray-500">
-              {new Date(ride.startTime).toLocaleString()}
+            <div className="flex flex-col items-end gap-2">
+              <div className="text-sm text-gray-500">
+                {new Date(ride.startTime).toLocaleString()}
+              </div>
+              <Button
+                onClick={() => handleJoinRide(ride.id)}
+                disabled={joiningRideId === ride.id}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {joiningRideId === ride.id ? 'Joining...' : 'Join Ride'}
+              </Button>
             </div>
           </div>
         </Card>

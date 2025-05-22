@@ -23,27 +23,37 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log('Creating ride with data:', {
-      distance: parseInt(distance),
-      creator,
-      startLat,
-      startLng,
-    })
-
-    const newRide = await db.insert(rides).values({
+    const rideData = {
       distance: parseInt(distance),
       creator,
       isOpenRoute: true, // Default to open route
       startLat,
       startLng,
-    }).returning()
+    }
+    console.log('Attempting to create ride with data:', rideData)
 
-    console.log('Created ride:', newRide[0])
-    return NextResponse.json(newRide[0])
+    try {
+      const newRide = await db.insert(rides).values(rideData).returning()
+      console.log('Successfully created ride:', newRide[0])
+      return NextResponse.json(newRide[0])
+    } catch (dbError) {
+      console.error('Database error details:', {
+        error: dbError,
+        message: dbError instanceof Error ? dbError.message : 'Unknown database error',
+        stack: dbError instanceof Error ? dbError.stack : undefined,
+        code: dbError instanceof Error ? (dbError as any).code : undefined,
+        detail: dbError instanceof Error ? (dbError as any).detail : undefined,
+        constraint: dbError instanceof Error ? (dbError as any).constraint : undefined,
+      })
+      throw dbError // Re-throw to be caught by outer catch block
+    }
   } catch (error) {
     console.error('Error creating ride:', error)
+    const errorMessage = error instanceof Error 
+      ? `${error.message}${(error as any).detail ? ` - ${(error as any).detail}` : ''}`
+      : 'Failed to create ride'
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create ride' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
@@ -61,7 +71,10 @@ export async function GET() {
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        name: error.name
+        name: error.name,
+        code: (error as any).code,
+        detail: (error as any).detail,
+        constraint: (error as any).constraint,
       })
     }
     return NextResponse.json(

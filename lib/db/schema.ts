@@ -81,6 +81,15 @@ export const rides = pgTable('rides', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const rideParticipants = pgTable('ride_participants', {
+  id: serial('id').primaryKey(),
+  rideId: integer('ride_id')
+    .notNull()
+    .references(() => rides.id),
+  userId: text('user_id').notNull(), // Using text for now since we don't have user auth yet
+  joinedAt: timestamp('joined_at').notNull().defaultNow(),
+});
+
 export const teamsRelations = relations(teams, ({ many }) => ({
   teamMembers: many(teamMembers),
   activityLogs: many(activityLogs),
@@ -125,6 +134,17 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   }),
 }));
 
+export const ridesRelations = relations(rides, ({ many }) => ({
+  participants: many(rideParticipants),
+}));
+
+export const rideParticipantsRelations = relations(rideParticipants, ({ one }) => ({
+  ride: one(rides, {
+    fields: [rideParticipants.rideId],
+    references: [rides.id],
+  }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Team = typeof teams.$inferSelect;
@@ -156,3 +176,5 @@ export enum ActivityType {
 
 export type Ride = typeof rides.$inferSelect;
 export type NewRide = typeof rides.$inferInsert;
+export type RideParticipant = typeof rideParticipants.$inferSelect;
+export type NewRideParticipant = typeof rideParticipants.$inferInsert;
